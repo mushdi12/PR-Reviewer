@@ -10,9 +10,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"pr-reviewer/adapters/db"
-	"pr-reviewer/closers"
-	"pr-reviewer/config"
+
+	"pr-reviewer/internal/adapters/db"
+	"pr-reviewer/internal/adapters/rest"
+	"pr-reviewer/internal/closers"
+	"pr-reviewer/internal/config"
+	"pr-reviewer/internal/core"
 )
 
 func main() {
@@ -50,39 +53,26 @@ func run(cfg *config.Config, log *slog.Logger) error {
 		return fmt.Errorf("failed to migrate db: %v", err)
 	}
 
+	service := core.NewService(storage.Team, storage.User, storage.PR)
+
 	mux := http.NewServeMux()
-	// todo : implement all endpoints from openapi.yml
-	mux.HandleFunc("/api/v1/teams", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, World!"))
-	})
-	mux.HandleFunc("/api/v1/users", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, World!"))
-	})
-	mux.HandleFunc("/api/v1/pullRequests", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, World!"))
-	})
-	mux.HandleFunc("/api/v1/pullRequests/assign", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, World!"))
-	})
-	mux.HandleFunc("/api/v1/pullRequests/unassign", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, World!"))
-	})
-	mux.HandleFunc("/api/v1/pullRequests/merge", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, World!"))
-	})	
+	mux.Handle("POST /team/add", rest.CreateTeamHandler(log, service))
+	mux.Handle("GET /team/get", rest.GetTeamHandler(log, service))
+	mux.Handle("POST /users/setIsActive", rest.SetUserActiveHandler(log, service))
+	mux.Handle("POST /pullRequest/create", rest.CreatePRHandler(log, service))
+	mux.Handle("POST /pullRequest/merge", rest.MergePRHandler(log, service))
+	mux.Handle("POST /pullRequest/reassign", rest.ReassignReviewerHandler(log, service))
+	mux.Handle("GET /users/getReview", rest.GetUserReviewsHandler(log, service))
+	mux.Handle("GET /statistics", rest.GetStatisticsHandler(log, service))
+
+	handler := rest.LoggingMiddleware(log)(mux)
 
 	server := &http.Server{
 		Addr:         cfg.HTTPConfig.Address,
 		ReadTimeout:  cfg.HTTPConfig.Timeout,
 		WriteTimeout: cfg.HTTPConfig.Timeout,
 		IdleTimeout:  cfg.HTTPConfig.Timeout,
-		Handler:      mux,
+		Handler:      handler,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -95,7 +85,7 @@ func run(cfg *config.Config, log *slog.Logger) error {
 			log.Error("erroneous shutdown", "error", err)
 		}
 	}()
- 
+
 	log.Info("Running HTTP server", "address", cfg.HTTPConfig.Address)
 	if err := server.ListenAndServe(); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {

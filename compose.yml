@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
@@ -17,6 +15,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  app:
+    build:
+      context: ./reviewer
+      dockerfile: Dockerfile
+    container_name: pr-reviewer-app
+    ports:
+      - "8080:8080"
+    environment:
+      - PR_REVIEWER_ADDRESS=0.0.0.0:8080
+      - DB_ADDRESS=postgres://postgres:postgres@postgres:5432/pr_reviewer?sslmode=disable
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:

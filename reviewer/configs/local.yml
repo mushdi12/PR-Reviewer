@@ -1,0 +1,5 @@
+log_level: DEBUG
+pr-reviewer:
+  address: localhost:8080
+  timeout: 10s
+db_address: postgres://postgres:postgres@localhost:5432/pr_reviewer?sslmode=disable

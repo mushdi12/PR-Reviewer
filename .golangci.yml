@@ -1,0 +1,57 @@
+run:
+  timeout: 5m
+  tests: true
+
+# Включаемые линтеры
+linters:
+  enable:
+    # Базовые проверки
+    - errcheck      # Проверка обработки ошибок
+    - govet         # Статический анализ (go vet)
+    - staticcheck   # Статический анализ
+    - gosimple      # Упрощение кода
+    - ineffassign   # Неиспользуемые присваивания
+    - unused        # Неиспользуемый код
+    
+    # Стиль кода
+    - misspell      # Проверка орфографии
+    - gci           # Группировка импортов
+    
+    # Качество кода
+    - gocritic      # Критический анализ кода
+    - gocyclo       # Цикломатическая сложность
+    
+    # Безопасность
+    - gosec         # Проверка безопасности
+
+# Настройки линтеров
+linters-settings:
+  # Цикломатическая сложность
+  gocyclo:
+    min-complexity: 15
+  
+  # Группировка импортов
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(pr-reviewer)
+  
+  # Критический анализ
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  
+  # Безопасность
+  gosec:
+    excludes:
+      - G404  # Разрешаем rand.Intn для не-криптографического использования
+
+# Исключения
+issues:
+  exclude-dirs:
+    - vendor
+  exclude-files:
+    - ".*\\.pb\\.go$"

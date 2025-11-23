@@ -1,5 +1,0 @@
-log_level: DEBUG
-pr-reviewer:
-  address: localhost:80
-  timeout: 10s
-db_address: localhost:5432

@@ -9,23 +9,36 @@ import (
 type DB struct {
 	log  *slog.Logger
 	conn *sqlx.DB
+
+	Team *TeamRepository
+	User *UserRepository
+	PR   *PRRepository
 }
 
 func New(log *slog.Logger, address string) (*DB, error) {
-
-	db, err := sqlx.Connect("pgx", address)
+	conn, err := sqlx.Connect("pgx", address)
 	if err != nil {
 		log.Error("connection problem", "address", address, "error", err)
 		return nil, err
-
 	}
 
-	return &DB{
+	db := &DB{
 		log:  log,
-		conn: db,
-	}, nil
+		conn: conn,
+	}
+
+	db.Team = NewTeamRepository(db)
+	db.User = NewUserRepository(db)
+	db.PR = NewPRRepository(db)
+
+	return db, nil
 }
 
 func (db *DB) Close() error {
 	return db.conn.Close()
+}
+
+// для тестов
+func (db *DB) Conn() *sqlx.DB {
+	return db.conn
 }

@@ -1,0 +1,6 @@
+log_level: INFO
+pr-reviewer:
+  address: 0.0.0.0:8080
+  timeout: 10s
+db_address: postgres://postgres:postgres@postgres:5432/pr_reviewer?sslmode=disable
+
